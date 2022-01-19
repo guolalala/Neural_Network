@@ -2,12 +2,14 @@
 author: Bodan Chen
 Date: 2022-01-19 16:20:30
 LastEditors: Bodan Chen
-LastEditTime: 2022-01-19 16:20:30
+LastEditTime: 2022-01-19 17:26:03
 Email: 18377475@buaa.edu.cn
 '''
 
 import numpy as np
 import math
+from pathlib import Path
+import struct
 
 def tanh(x):
     return np.tanh(x)
@@ -51,3 +53,18 @@ def predict(img,para):
     l1_out=activation[1](l1_in)
     return l1_out
 print(predict(np.random.rand(N1),parameters).argmax())
+
+
+data_path=Path('./MNIST')
+train_img_path=data_path/'train-images-idx3-ubyte'
+train_lab_path=data_path/'train-labels-idx1-ubyte'
+test_img_path=data_path/'t10k-images-idx3-ubyte'
+test_lab_path=data_path/'t10k-images-idx3-ubyte'
+
+train_f=open(train_img_path,'rb')
+struct.unpack('>4i',train_f.read(16))
+#print(data_path)
+with open(train_img_path,'rb') as f:
+    struct.unpack('>4i',f.read(16))
+    test_img=np.fromfile(f,dtype=np.uint8).reshape(-1,28*28)
+    print(test_img)
