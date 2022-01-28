@@ -2,11 +2,13 @@
 author: Bodan Chen
 Date: 2022-01-19 16:20:30
 LastEditors: Bodan Chen
-LastEditTime: 2022-01-28 15:40:30
+LastEditTime: 2022-01-28 20:34:41
 Email: 18377475@buaa.edu.cn
 '''
 
+from cProfile import label
 from copy import copy
+from turtle import color
 from django.urls import translate_url
 import numpy as np
 import math
@@ -14,6 +16,7 @@ from pathlib import Path
 import struct
 import matplotlib.pyplot as plt
 import copy
+from tqdm import tqdm_notebook
 
 def tanh(x):
     return np.tanh(x)
@@ -129,10 +132,18 @@ def valid_loss(parameter):
     loss_accu=0
     for img_i in range(valid_num):
         loss_accu+=sqr_loss(valid_img[img_i],valid_lab[img_i],parameter)
-    return loss_accu
+    return loss_accu/(valid_num/10000)
 def valid_accuracy(parameter):
     correct=[predict(valid_img[i],parameter).argmax()==valid_lab[i] for i in range(valid_num)]
-    print('validation accuracy:{}'.format(correct.count(True)/len(correct)))
+    return correct.count(True)/len(correct)
+def train_loss(parameter):
+    loss_accu=0
+    for img_i in range(train_num):
+        loss_accu+=sqr_loss(train_img[img_i],train_lab[img_i],parameter)
+    return loss_accu/(train_num/10000)
+def train_accuracy(parameter):
+    correct=[predict(train_img[i],parameter).argmax()==train_lab[i] for i in range(train_num)]
+    return correct.count(True)/len(correct)
 #valid_accuracy(init_parameters())
 
 batch_size=100
@@ -155,12 +166,38 @@ def combine_parameters(parameter,grad,learn_rate):
 #print(combine_parameters(parameters,train_batch(0,parameters),1))
 
 parameters=init_parameters()
+current_epoch=0
+train_loss_list=[]
+valid_loss_list=[]
+train_accu_list=[]
+valid_accu_list=[]
+
 learn_rate=1
+epocg_num=5
 #print(parameters)
-for i in range(train_num//batch_size):
-    if i%100==99:
-        print('running batch {}/{}'.format(i+1,train_num//batch_size))
-    for j in range(2):
+
+for epoch in tqdm_notebook(range(epocg_num)):
+    for i in range(train_num//batch_size):
+        if i%100==99:
+            print('running batch {}/{}'.format(i+1,train_num//batch_size))
         grad_tmp=train_batch(i,parameters)
         parameters=combine_parameters(parameters,grad_tmp,learn_rate)
-valid_accuracy(parameters)
+    current_epoch+=1
+    train_loss_list.append(train_loss(parameters))
+    train_accu_list.append(train_accuracy(parameters))
+    valid_loss_list.append(valid_loss(parameters))
+    valid_accu_list.append(valid_accuracy(parameters))
+print("valid accuracy: {}".format(valid_accuracy(parameters)))
+print(valid_accu_list)
+lower=0
+plt.plot(valid_loss_list[lower:],color='black',label='validation loss')
+plt.plot(train_loss_list[lower:],color='red',label='train loss')
+plt.show()
+
+rand_batch=np.random.randint(train_num//batch_size)
+grad_lr=train_batch(rand_batch,parameters)
+
+lr_list=[]
+lower=-5
+upper=2
+step=1
