@@ -2,7 +2,7 @@
 author: Bodan Chen
 Date: 2022-01-19 16:20:30
 LastEditors: Bodan Chen
-LastEditTime: 2022-01-28 20:34:41
+LastEditTime: 2022-01-28 20:38:08
 Email: 18377475@buaa.edu.cn
 '''
 
@@ -201,3 +201,8 @@ lr_list=[]
 lower=-5
 upper=2
 step=1
+for lr_low in np.linspace(lower,upper,num=(upper-lower)//step+1):
+    learn_rate=10**lr_low
+    parameters_tmp=combine_parameters(parameters,grad_lr,learn_rate)
+    train_loss_tmp=train_loss(parameters_tmp)
+    lr_list.append([lr_low,train_loss_tmp])
