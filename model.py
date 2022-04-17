@@ -2,7 +2,7 @@
 author: Bodan Chen
 Date: 2022-04-17 16:35:31
 LastEditors: Bodan Chen
-LastEditTime: 2022-04-17 16:40:13
+LastEditTime: 2022-04-17 16:41:32
 Email: 18377475@buaa.edu.cn
 '''
 import pandas as pd
@@ -66,3 +66,7 @@ def reduce_mem_usage(df):
     print('Memory usage after optimization is: {:.2f} MB'.format(end_mem))
     print('Decreased by {:.1f}%'.format(100 * (start_mem - end_mem) / start_mem))
     return df
+
+data_train = pd.read_csv('./data/train.csv')
+data_train = data_train.replace(-1,np.nan)
+data_train=reduce_mem_usage(data_train)
