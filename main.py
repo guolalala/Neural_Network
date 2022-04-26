@@ -2,7 +2,7 @@
 author: Bodan Chen
 Date: 2022-04-15 19:45:39
 LastEditors: Bodan Chen
-LastEditTime: 2022-04-16 12:30:06
+LastEditTime: 2022-04-19 17:03:49
 Email: 18377475@buaa.edu.cn
 '''
 from nis import cat
@@ -31,6 +31,7 @@ print(data_train.shape)
 print(data_train.columns)
 # 数据类型
 print(data_train.info())
+
 # 一些基本统计量
 print(data_train.describe())
 #print(data_train.head(3).append(data_train.tail(3)))
@@ -92,3 +93,10 @@ numerical_serial_fea,numerical_noserial_fea = get_numerical_serial_fea(data_trai
 
 for item in numerical_noserial_fea:
     print(data_train[item].value_counts())
+
+#按照中位数填充数值型特征
+data_train[numerical_fea] = data_train[numerical_fea].fillna(data_train[numerical_fea].median())
+data_test_a[numerical_fea] = data_test_a[numerical_fea].fillna(data_train[numerical_fea].median())
+#按照众数填充类别型特征
+data_train[category_fea] = data_train[category_fea].fillna(data_train[category_fea].mode())
+data_test_a[category_fea] = data_test_a[category_fea].fillna(data_train[category_fea].mode())

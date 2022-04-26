@@ -2,7 +2,7 @@
 author: Bodan Chen
 Date: 2022-02-16 16:30:29
 LastEditors: Bodan Chen
-LastEditTime: 2022-04-15 20:20:26
+LastEditTime: 2022-04-18 10:27:24
 Email: 18377475@buaa.edu.cn
 '''
 # #Code: https://github.com/MorvanZhou/PyTorch-Tutorial
@@ -25,13 +25,16 @@ import numpy as np
 # # np.abs(data)
 # # torch.abs(data)
 
+import pickle
+f=open('./data/model_lgb.pkl','rb')
+data=pickle.load(f)
+print(data)
+
 print("****************下载文件中。。。")
 #!wget http://tianchi-media.oss-cn-beijing.aliyuncs.com/dragonball/DL/other/data/Emotion_Recognition_File.zip
 print("****************下载完成。。。")
 
-df=pd.DataFrame({'A':[1,0,-1],
-'B':[1,1,1],
-'C':[-1,-1,-1]})
+df=pd.DataFrame({'A':[1,0,-1],'B':[1,1,1],'C':[-1,-1,-1],'D':[0,0,0]})
 print(df)
 df=df.replace(-1,np.nan)
 print(df)
