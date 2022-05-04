@@ -2,13 +2,14 @@
 author: Bodan Chen
 Date: 2022-04-28 19:30:04
 LastEditors: Bodan Chen
-LastEditTime: 2022-04-28 20:19:05
+LastEditTime: 2022-05-01 20:13:15
 Email: 18377475@buaa.edu.cn
 '''
 import numpy as np
 import pandas as pd
 import networkx as nx
-
+#from c1 import read_node_label,Classifier
+import c1
 edges=pd.DataFrame()
 edges['s']=[1,1,2]
 edges['t']=[2,3,4]
