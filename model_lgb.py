@@ -2,7 +2,7 @@
 author: Bodan Chen
 Date: 2022-04-17 16:35:31
 LastEditors: Bodan Chen
-LastEditTime: 2022-04-18 00:24:21
+LastEditTime: 2022-05-07 22:37:29
 Email: 18377475@buaa.edu.cn
 '''
 import pandas as pd
@@ -11,6 +11,7 @@ import warnings
 import os
 import seaborn as sns
 import matplotlib.pyplot as plt
+from sqlalchemy import true
 
 warnings.filterwarnings('ignore')
 
@@ -73,19 +74,19 @@ data_train = pd.read_csv('./data/train.csv')
 data_train = data_train.replace(-1,np.nan)
 data_test=pd.read_csv('./data/test.csv')
 data_test=data_test.replace(-1,np.nan)
-data_train=reduce_mem_usage(data_train)
-data_test=reduce_mem_usage(data_test)
+#data_train=reduce_mem_usage(data_train)
+#data_test=reduce_mem_usage(data_test)
 print(type(data_train))
 
+
+miss_fearures_dict={'zx_account_status':0.9964717741935484,'loan_is_black':0.9962197580645161,'zx_is_credictcard_current_ovd':0.9952116935483871,'zx_is_current_ovd':0.9873991935483871,'zx_is_lian3_lei6':0.9662298387096774,'als_d15_id_nbank_oth_allnum':0.9027217741935484,'als_m12_id_nbank_finlea_allnum':0.8588709677419355}
+miss_fearures=miss_fearures_dict.keys()
 from sklearn.model_selection import KFold
 # 分离数据集，方便进行交叉验证
-# id,fraud_flag
 X_train = data_train.drop(['id','fraud_flag'],axis=1)
-#X_test = data_test.drop(['id','fraud_flag'],axis=1)
-y_train = data_train.loc[:,'fraud_flag']
-# X_train = data.loc[data['sample']=='train', :].drop(['id','issueDate','isDefault', 'sample'], axis=1)
-# X_test = data.loc[data['sample']=='test', :].drop(['id','issueDate','isDefault', 'sample'], axis=1)
-# y_train = data.loc[data['sample']=='train', 'isDefault']
+X_train=X_train.drop(miss_fearures,axis=1)
+y_train = data_train['fraud_flag']
+print(y_train)
 
 # 10折交叉验证
 folds = 10
@@ -96,60 +97,14 @@ kf = KFold(n_splits=folds, shuffle=True, random_state=seed)
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
 from sklearn.metrics import roc_auc_score
-#pip3 install Booster && pip3 install Dataset && pip3 install Sequence && pip3 install register_logger
-# import lightgbm as lgb
-# # 数据集划分
-# X_train_split, X_val, y_train_split, y_val = train_test_split(X_train, y_train, test_size=0.2)
-# train_matrix = lgb.Dataset(X_train_split, label=y_train_split)
-# valid_matrix = lgb.Dataset(X_val, label=y_val)
-
-# params = {
-#             'boosting_type': 'gbdt',
-#             'objective': 'binary',
-#             'learning_rate': 0.1,
-#             'metric': 'auc',
-#             'min_child_weight': 1e-3,
-#             'num_leaves': 31,
-#             'max_depth': -1,
-#             'reg_lambda': 0,
-#             'reg_alpha': 0,
-#             'feature_fraction': 1,
-#             'bagging_fraction': 1,
-#             'bagging_freq': 0,
-#             'seed': 2020,
-#             'nthread': 8,
-#             'silent': True,
-#             'verbose': -1,
-# }
-
-# """使用训练集数据进行模型训练"""
-# model = lgb.train(params, train_set=train_matrix, valid_sets=valid_matrix, num_boost_round=20000, verbose_eval=1000, early_stopping_rounds=200)
-
-# from sklearn import metrics
-# from sklearn.metrics import roc_auc_score
-
-# """预测并计算roc的相关指标"""
-# val_pre_lgb = model.predict(X_val, num_iteration=model.best_iteration)
-# fpr, tpr, threshold = metrics.roc_curve(y_val, val_pre_lgb)
-# roc_auc = metrics.auc(fpr, tpr)
-# print('未调参前lightgbm单模型在验证集上的AUC:{}'.format(roc_auc))
-# """画出roc曲线图"""
-# plt.figure(figsize=(8, 8))
-# plt.title('Validation ROC')
-# plt.plot(fpr, tpr, 'b', label = 'Val AUC = %0.4f' % roc_auc)
-# plt.ylim(0,1)
-# plt.xlim(0,1)
-# plt.legend(loc='best')
-# plt.title('ROC')
-# plt.ylabel('True Positive Rate')
-# plt.xlabel('False Positive Rate')
-# # 画出对角线
-# plt.plot([0,1],[0,1],'r--')
-# plt.show()
 
 import lightgbm as lgb
 """使用lightgbm 10折交叉验证进行建模预测"""
 cv_scores = []
+val_score=[]
+y_score=[]
+
+test_pred_prob=np.zeros((X_train.shape[0],))
 for i, (train_index, valid_index) in enumerate(kf.split(X_train, y_train)):
     print('************************************ {} ************************************'.format(str(i+1)))
     X_train_split, y_train_split, X_val, y_val = X_train.iloc[train_index], y_train[train_index], X_train.iloc[valid_index], y_train[valid_index]
@@ -161,7 +116,7 @@ for i, (train_index, valid_index) in enumerate(kf.split(X_train, y_train)):
                 'boosting_type': 'gbdt',
                 'objective': 'binary',
                 'learning_rate': 0.1,
-                'metric': 'auc',
+                'metric': {'auc'},
         
                 'min_child_weight': 1e-3,
                 'num_leaves': 31,
@@ -173,16 +128,42 @@ for i, (train_index, valid_index) in enumerate(kf.split(X_train, y_train)):
                 'bagging_freq': 0,
                 'seed': 2020,
                 'nthread': 8,
-                'silent': True,
+                #'silent': True,
                 'verbose': -1,
+                'force_row_wise':True,
+                #'force_col_wise':True,
+                
     }
     
-    model = lgb.train(params, train_set=train_matrix, num_boost_round=20000, valid_sets=valid_matrix, verbose_eval=1000, early_stopping_rounds=200)
+    model = lgb.train(params, train_set=train_matrix, num_boost_round=20000, valid_sets=[train_matrix,valid_matrix], verbose_eval=1000, early_stopping_rounds=200)
     val_pred = model.predict(X_val, num_iteration=model.best_iteration)
-    
-    cv_scores.append(roc_auc_score(y_val, val_pred))
+    print("max_val_pred=",max(list(val_pred)))
+
+    y_score.append(y_val)
+    val_score.append(val_pred)
+
+    cv_scores.append(roc_auc_score(y_val, np.where(val_pred>0.68,1,0)))
     print(cv_scores)
 
+maxauc=0
+maxthre=0
+print(val_score[-1])
+
+# find bestAUC
+for i in range(100):
+    tmpauc=[]
+    for j in range(10):
+        tmp_val=np.where(val_score[j]>=i/100,1,0)
+        #print(type(tmp_val),len(tmp_val))
+        #print(type(y_score[j]), len(y_score[j]))
+        tmpauc.append(roc_auc_score(y_score[j],tmp_val))
+    
+    #tmpauc=auc_score[:,i]
+    print("i=%d lgb_auc_score_mean:%f"%(i,np.mean(tmpauc)))
+    if(np.mean(tmpauc)>maxauc):
+        maxauc=np.mean(tmpauc)
+        maxthre=i/100
+print("maxauc=%f maxthre=%f"%(maxauc,maxthre))
 print("lgb_scotrainre_list:{}".format(cv_scores))
 print("lgb_score_mean:{}".format(np.mean(cv_scores)))
 print("lgb_score_std:{}".format(np.std(cv_scores)))
@@ -190,4 +171,4 @@ print("lgb_score_std:{}".format(np.std(cv_scores)))
 """保存模型到本地"""
 # 保存模型
 import pickle
-pickle.dump(model, open('data/model_lgb.pkl', 'wb'))
+#pickle.dump(model, open('data/model_lgb.pkl', 'wb'))

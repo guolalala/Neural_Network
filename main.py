@@ -2,7 +2,7 @@
 author: Bodan Chen
 Date: 2022-04-15 19:45:39
 LastEditors: Bodan Chen
-LastEditTime: 2022-04-19 17:03:49
+LastEditTime: 2022-05-07 22:34:09
 Email: 18377475@buaa.edu.cn
 '''
 from nis import cat
@@ -52,7 +52,10 @@ for key,value in have_null_fea_dict.items():
     if value>0.5:
         fea_null_moreThanhalf[key]=value
 print(fea_null_moreThanhalf)
-
+print()
+tuple_list=[(a,b) for b,a in fea_null_moreThanhalf.items()]
+tuple_list=sorted(tuple_list)
+print(tuple_list)
 # nan可视化
 missing = data_train.isnull().sum()/len(data_train)
 missing = missing[missing>0]
@@ -94,9 +97,11 @@ numerical_serial_fea,numerical_noserial_fea = get_numerical_serial_fea(data_trai
 for item in numerical_noserial_fea:
     print(data_train[item].value_counts())
 
+'''
 #按照中位数填充数值型特征
 data_train[numerical_fea] = data_train[numerical_fea].fillna(data_train[numerical_fea].median())
 data_test_a[numerical_fea] = data_test_a[numerical_fea].fillna(data_train[numerical_fea].median())
 #按照众数填充类别型特征
 data_train[category_fea] = data_train[category_fea].fillna(data_train[category_fea].mode())
 data_test_a[category_fea] = data_test_a[category_fea].fillna(data_train[category_fea].mode())
+'''

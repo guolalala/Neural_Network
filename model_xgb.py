@@ -2,10 +2,11 @@
 author: Bodan Chen
 Date: 2022-04-26 16:23:21
 LastEditors: Bodan Chen
-LastEditTime: 2022-04-26 19:51:56
+LastEditTime: 2022-05-07 20:08:00
 Email: 18377475@buaa.edu.cn
 '''
 from cProfile import label
+from pydoc import describe
 from tkinter.tix import InputOnly
 import pandas as pd
 import numpy as np
@@ -73,6 +74,7 @@ def reduce_mem_usage(df):
 
 data_train = pd.read_csv('./data/train.csv')
 data_train = data_train.replace(-1,np.nan)
+#print(data_train.loc[0])
 data_test=pd.read_csv('./data/test.csv')
 data_test=data_test.replace(-1,np.nan)
 data_train=reduce_mem_usage(data_train)
@@ -83,7 +85,9 @@ from sklearn.model_selection import KFold
 # 分离数据集，方便进行交叉验证
 # id,fraud_flag
 X_train = data_train.drop(['id','fraud_flag'],axis=1)
+#print(X_train.info())
 y_train = data_train.loc[:,'fraud_flag']
+#print(y_train.info())
 
 # 10折交叉验证
 folds = 10
@@ -102,6 +106,8 @@ import xgboost as xgb
 import lightgbm as lgb
 """使用xgboost 10折交叉验证进行建模预测"""
 cv_scores = []
+val_score=[]
+y_score=[]
 for i, (train_index, valid_index) in enumerate(kf.split(X_train, y_train)):
     print('************************************ {} ************************************'.format(str(i+1)))
     X_train_split, y_train_split, X_val, y_val = X_train.iloc[train_index], y_train[train_index], X_train.iloc[valid_index], y_train[valid_index]
@@ -122,6 +128,9 @@ for i, (train_index, valid_index) in enumerate(kf.split(X_train, y_train)):
 
     '''predict'''
     val_pred=model.predict(dtest)
+    y_score.append(y_val)
+    val_score.append(val_pred)
+
     cv_scores.append(roc_auc_score(y_val,val_pred))
     print(cv_scores)
     # train_matrix = lgb.Dataset(X_train_split, label=y_train_split)
@@ -152,6 +161,26 @@ for i, (train_index, valid_index) in enumerate(kf.split(X_train, y_train)):
     
     # cv_scores.append(roc_auc_score(y_val, val_pred))
     # print(cv_scores)
+
+maxauc=0
+maxthre=0
+print(val_score[-1])
+
+# find bestAUC
+for i in range(100):
+    tmpauc=[]
+    for j in range(10):
+        tmp_val=np.where(val_score[j]>=i/100,1,0)
+        #print(type(tmp_val),len(tmp_val))
+        #print(type(y_score[j]), len(y_score[j]))
+        tmpauc.append(roc_auc_score(y_score[j],tmp_val))
+    
+    #tmpauc=auc_score[:,i]
+    print("i=%d lgb_auc_score_mean:%f"%(i,np.mean(tmpauc)))
+    if(np.mean(tmpauc)>maxauc):
+        maxauc=np.mean(tmpauc)
+        maxthre=i/100
+print("maxauc=%f maxthre=%f"%(maxauc,maxthre))
 print("xgb_scotrainre_list:{}".format(cv_scores))
 print("xgb_score_mean:{}".format(np.mean(cv_scores)))
 print("xgb_score_std:{}".format(np.std(cv_scores)))

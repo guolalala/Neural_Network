@@ -2,7 +2,7 @@
 author: Bodan Chen
 Date: 2022-05-01 22:23:09
 LastEditors: Bodan Chen
-LastEditTime: 2022-05-05 01:47:50
+LastEditTime: 2022-05-05 19:19:54
 Email: 18377475@buaa.edu.cn
 '''
 
@@ -46,13 +46,14 @@ def evaluate_embeddings_lgb(embeddings):
     import lightgbm as lgb
     """使用lightgbm 10折交叉验证进行建模预测"""
     cv_scores = []
+    auc_score=[]
+    thre_score=[]
     for i, (train_index, valid_index) in enumerate(kf.split(X_train, y_train)):
         print('************************************ {} ************************************'.format(str(i+1)))
         X_train_split, y_train_split, X_val, y_val = X_train.iloc[train_index], y_train[train_index], X_train.iloc[valid_index], y_train[valid_index]
         
         train_matrix = lgb.Dataset(X_train_split, label=y_train_split)
         valid_matrix = lgb.Dataset(X_val, label=y_val)
-
         params = {
                     'boosting_type': 'gbdt',
                     'objective': 'binary',
@@ -72,13 +73,56 @@ def evaluate_embeddings_lgb(embeddings):
                     'silent': True,
                     'verbose': -1,
         }
-        
         model = lgb.train(params, train_set=train_matrix, num_boost_round=20000, valid_sets=valid_matrix, verbose_eval=1000, early_stopping_rounds=200)
         val_pred = model.predict(X_val, num_iteration=model.best_iteration)
-        
-        cv_scores.append(roc_auc_score(y_val, val_pred))
-        print(cv_scores)
+        print('val_pred=',type(val_pred),len(val_pred),val_pred[:10])
+        #val_pred=[list(x).index(max(x)) for x in val_pred]
+        #print('val_pred=',type(val_pred),len(val_pred),val_pred)
 
+        print("y_val=",y_val[:50])
+        print("y_pred=",type(val_pred),val_pred[:50])
+        
+        aucmax=[]
+        thremax=[]
+        for i in range(100):
+            def bina(x):
+                if x>i/100:
+                    return 1
+                return 0
+            #val_pred0=[bina(x) for x in val_pred]
+            val_pred0=np.where(val_pred>=i/100,0,1)
+            
+            print('val_pred=',type(val_pred0),len(val_pred0),val_pred0[:10])
+            
+            tmpauc=roc_auc_score(y_val,val_pred0)
+            aucmax.append(tmpauc)
+            thremax.append(i/100)
+        auc_score.append(aucmax)
+        thre_score.append(thremax)
+        #print('aucmax=%f,thremax=%f'%(aucmax,thremax))
+        
+
+        # def binary(x):
+        #     if x>0.68:
+        #         return 1
+        #     return 0
+        # val_pred=[binary(x) for x in val_pred]
+        # print('val_pred=',type(val_pred),len(val_pred),val_pred[:10])
+        # cv_scores.append(roc_auc_score(y_val, val_pred))
+        # print(cv_scores)
+        
+        cv_scores.append(aucmax[50])
+        print(cv_scores)
+    auc_score=np.array(auc_score)
+    maxauc=0
+    maxthre=0
+    for i in range(100):
+        tmpauc=auc_score[:,i]
+        print("i=%d lgb_auc_score_mean:%f"%(i,np.mean(tmpauc)))
+        if(np.mean(tmpauc)>maxauc):
+            maxauc=np.mean(tmpauc)
+            maxthre=i/100
+    print("maxauc=%f maxthre=%f"%(maxauc,maxthre))
     print("lgb_scotrainre_list:{}".format(cv_scores))
     print("lgb_score_mean:{}".format(np.mean(cv_scores)))
     print("lgb_score_std:{}".format(np.std(cv_scores)))
@@ -141,7 +185,7 @@ if __name__ == "__main__":
     embeddings=pd.read_csv('./data/embeddings.csv')
     print(embeddings.head())
     print(embeddings.head().iloc[:,1:])
-    evaluate_embeddings_lgb(embeddings.iloc[:,1:])
+    #evaluate_embeddings_lgb(embeddings.iloc[:,1:])
     #将邻接矩阵转成edgelist
     # G=nx.from_numpy_matrix('data/adjmatrix.csv',create_using=nx.Graph())
     # print(G)
