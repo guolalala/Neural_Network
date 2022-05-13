@@ -2,7 +2,7 @@
 author: Bodan Chen
 Date: 2022-05-01 22:23:09
 LastEditors: Bodan Chen
-LastEditTime: 2022-05-05 19:19:54
+LastEditTime: 2022-05-10 20:24:35
 Email: 18377475@buaa.edu.cn
 '''
 
@@ -161,9 +161,11 @@ def plot_embeddings(embeddings,):
 
 
 if __name__ == "__main__":
-    '''
+    
     data=pd.read_csv('data/adjmatrix.csv',index_col=0)
-    data=data.iloc[0:3968,0:3968]
+    tr=pd.read_csv('./data/train.csv',index_col='id')
+    inde=tr.index.values
+    data=data.loc[inde,inde]
     G=nx.Graph(data.values)
     print(nx.info(G))
 
@@ -176,7 +178,7 @@ if __name__ == "__main__":
     df_T=pd.DataFrame(df.values.T,index=df.columns,columns=df.index)
     print(df_T)
     df_T.to_csv(fp,encoding='utf-8',sep=',',header=true,na_rep=-1,index=true)
-    '''
+    
     
     #print(list(embeddings.items())[:10])
 

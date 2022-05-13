@@ -68,6 +68,21 @@ elif op==2:#concat特征
     train=pd.concat([train,em],axis=1)
 print(train.head())
 
+'''
+op==0
+LGB 0.7122447311780579
+XGB 0.711866004724055
+
+op==1
+LGB 0.6827250929832877
+XGB 0.6656430109712945
+
+op==2
+LGB 0.7594287679352432
+XGB 0.7397654388349426
+
+'''
+
 # 非数值列
 s = train.apply(lambda x:x.dtype)
 tecols = s[s=='object'].index.tolist()
